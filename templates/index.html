@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkFlow - Document Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a3e;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.05) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* Glass Card */
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .glass-card:hover {
+            background: var(--glass-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .glass-card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .glass-card h2 span {
+            font-size: 1.5rem;
+        }
+
+        /* Tabs */
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 6px;
+            border-radius: var(--radius-md);
+            margin-bottom: 0;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .mode-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mode-tab.active {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-zone:hover::before,
+        .upload-zone.dragover::before {
+            opacity: 0.05;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-text {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* File Info */
+        .file-info {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            margin-top: 16px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-info-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--success);
+            font-size: 0.9rem;
+        }
+
+        .file-info-content .file-icon {
+            font-size: 1.2rem;
+        }
+
+        .clear-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-percent {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill.animated {
+            animation: progressPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes progressPulse {
+            0% { width: 20%; }
+            50% { width: 80%; }
+            100% { width: 20%; }
+        }
+
+        /* Result Area */
+        .result-area {
+            display: none;
+            margin-top: 24px;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .result-area.show {
+            display: block;
+        }
+
+        .result-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            width: fit-content;
+        }
+
+        .result-tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .result-tab.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .result-tab:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        .result-content {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: var(--radius-md);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            tab-size: 2;
+        }
+
+        .result-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .result-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .result-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Format Grid */
+        .format-grid {
+            display: grid;
+
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .format-item {
+            padding: 16px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .format-item:hover {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: var(--glass-border);
+            transform: translateY(-2px);
+        }
+
+        .format-item.selected {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .format-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .format-name {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .format-item.selected .format-name {
+            color: var(--text-primary);
+        }
+
+        /* Select & Input */
+        .form-select, .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-select:focus, .form-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-select option {
+            background: #1a1a3e;
+            color: var(--text-primary);
+        }
+
+        .form-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        /* Toast Notifications */
+
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            min-width: 320px;
+            max-width: 420px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastIn 0.4s ease-out;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .toast.removing {
+            animation: toastOut 0.3s ease-in forwards;
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: var(--text-primary);
+        }
+
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--error); }
+        .toast.warning { border-left: 3px solid var(--warning); }
+        .toast.info { border-left: 3px solid var(--accent-primary); }
+
+        /* History Panel */
+        .history-panel {
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .history-panel.show {
+            display: block;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-filename {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .history-meta {
+            font-size: 0.75rem;
+
+            color: var(--text-muted);
+        }
+
+        .history-status {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .history-status.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .history-status.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+
+        .history-empty {
+            text-align: center;
+            padding: 32px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .clear-history-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: var(--radius-sm);
+            color: var(--error);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-top: 16px;
+        }
+
+        .clear-history-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Info Section */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: var(--radius-md);
+        }
+
+        .info-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .info-text strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* Hidden file input */
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px 16px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .glass-card {
+                padding: 24px 20px;
+            }
+
+            .mode-tabs {
+                flex-direction: column;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .format-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .toast-container {
+                left: 16px;
+                right: 16px;
+            }
+
+            .toast {
+                min-width: auto;
+                max-width: none;
+
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .upload-zone {
+                padding: 32px 16px;
+            }
+
+            .upload-icon {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-icon">&#x1F4C4;</div>
+            <h1>MarkFlow</h1>
+            <p>Multi-format Document Converter &bull; PDF &bull; Word &bull; Excel &bull; PPT &bull; Images</p>
+        </header>
+
+        <!-- Mode Selection -->
+        <div class="glass-card" style="animation-delay: 0.1s;">
+            <div class="mode-tabs">
+                <button class="mode-tab active" onclick="switchMode('to_md')">
+                    &#x1F4E4; Document &rarr; Markdown
+                </button>
+                <button class="mode-tab" onclick="switchMode('from_md')">
+                    &#x1F4E5; Markdown &rarr; Document
+                </button>
+                <button class="mode-tab" onclick="switchMode('batch')">
+                    &#x1F4E6; Batch Convert
+                </button>
+                <button class="mode-tab" onclick="switchMode('history')">
+                    &#x1F553; History
+                </button>
+            </div>
+        </div>
+
+        <!-- Document to Markdown -->
+        <div class="tab-content active" id="toMdContent">
+            <div class="glass-card" style="animation-delay: 0.2s;">
+                <h2><span>&#x1F4E4;</span> Convert Document to Markdown</h2>
+
+                <div class="upload-zone" id="uploadZone1" onclick="document.getElementById('fileInput1').click()">
+                    <div class="upload-icon">&#x1F4C1;</div>
+                    <p class="upload-text">Click or drag files here to upload</p>
+                    <p class="upload-hint">Supports PDF, Word (.docx), Excel (.xlsx), PPT (.pptx), Images</p>
+                </div>
+                <input type="file" id="fileInput1" accept=".pdf,.docx,.xlsx,.xls,.pptx,.jpg,.jpeg,.png,.bmp,.tiff,.gif" onchange="handleFile1(this)">
+
+                <div class="file-info" id="fileInfo1">
+                    <div class="file-info-content">
+                        <span class="file-icon">&#x1F4C4;</span>
+                        <span>
+                            <strong id="fileName1"></strong>
+                            <small style="color: var(--text-muted); display: block; font-size: 0.8rem;" id="fileSize1"></small>
+                        </span>
+                    </div>
+                    <button class="clear-btn" onclick="clearFile1()">&#x2715;</button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="convertBtn1" onclick="convertToMd()" disabled>
+                        &#x26A1; Convert to Markdown
+                    </button>
+                </div>
+
+                <div class="progress-container" id="progress1">
+                    <div class="progress-header">
+                        <span class="progress-text">Processing...</span>
+                        <span class="progress-percent" id="progressPercent1">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill animated" id="progressFill1"></div>
+                    </div>
+                </div>
+
+                <div class="result-area" id="result1">
+                    <div class="result-tabs">
+                        <button class="result-tab active" onclick="showResultTab('preview', this)">&#x1F441; Preview</button>
+                        <button class="result-tab" onclick="showResultTab('source', this)">&lt;/&gt; Source</button>
+                    </div>
+                    <div class="result-content" id="resultContent1"></div>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="copyMd()">&#x1F4CB; Copy</button>
+                        <button class="btn btn-success" onclick="downloadMd()">&#x2B07; Download .md</button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Markdown to Document -->
+        <div class="tab-content" id="fromMdContent">
+            <div class="glass-card" style="animation-delay: 0.2s;">
+                <h2><span>&#x1F4E5;</span> Convert Markdown to Document</h2>
+
+                <div style="margin-bottom: 20px;">
+                    <label class="form-label">Input Method</label>
+                    <select class="form-select" id="inputMethod" onchange="switchInputMethod()">
+                        <option value="text">Enter text directly</option>
+                        <option value="file">Upload .md file</option>
+                    </select>
+                </div>
+
+                <div id="textInput">
+                    <label class="form-label">Markdown Content</label>
+                    <textarea class="form-textarea" id="mdInput" placeholder="Enter your Markdown content here...&#10;&#10;Supports full Markdown syntax including:&#10;- Headers, bold, italic&#10;- Lists (ordered and unordered)&#10;- Code blocks&#10;- Tables&#10;- Links and images"></textarea>
+                </div>
+
+                <div id="fileInputSection" style="display: none;">
+                    <div class="upload-zone" id="uploadZone2" onclick="document.getElementById('fileInput2').click()">
+                        <div class="upload-icon">&#x1F4C1;</div>
+                        <p class="upload-text">Click to upload .md file</p>
+                    </div>
+                    <input type="file" id="fileInput2" accept=".md,.markdown,.txt" onchange="handleFile2(this)">
+                    <div class="file-info" id="fileInfo2">
+                        <div class="file-info-content">
+                            <span class="file-icon">&#x1F4C4;</span>
+                            <span id="fileName2"></span>
+                        </div>
+                        <button class="clear-btn" onclick="clearFile2()">&#x2715;</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <label class="form-label">Output Format</label>
+                    <div class="format-grid">
+                        <div class="format-item selected" onclick="selectFormat('docx')" id="fmt-docx">
+                            <div class="format-icon">&#x1F4DD;</div>
+                            <div class="format-name">Word</div>
+                        </div>
+                        <div class="format-item" onclick="selectFormat('xlsx')" id="fmt-xlsx">
+                            <div class="format-icon">&#x1F4CA;</div>
+                            <div class="format-name">Excel</div>
+                        </div>
+                        <div class="format-item" onclick="selectFormat('pptx')" id="fmt-pptx">
+                            <div class="format-icon">&#x1F4BD;</div>
+                            <div class="format-name">PPT</div>
+                        </div>
+                        <div class="format-item" onclick="selectFormat('pdf')" id="fmt-pdf">
+                            <div class="format-icon">&#x1F4C4;</div>
+                            <div class="format-name">PDF</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="convertBtn2" onclick="convertFromMd()" disabled>
+                        &#x26A1; Convert Document
+                    </button>
+                </div>
+
+                <div class="progress-container" id="progress2">
+                    <div class="progress-header">
+                        <span class="progress-text">Processing...</span>
+                        <span class="progress-percent" id="progressPercent2">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill animated" id="progressFill2"></div>
+                    </div>
+                </div>
+
+                <div class="result-area" id="result2">
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="downloadConvertedFile()">&#x2B07; Download File</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Convert -->
+        <div class="tab-content" id="batchContent">
+            <div class="glass-card" style="animation-delay: 0.2s;">
+                <h2><span>&#x1F4E6;</span> Batch Convert</h2>
+
+                <div class="upload-zone" id="uploadZone3" onclick="document.getElementById('fileInput3').click()">
+                    <div class="upload-icon">&#x1F4C1;</div>
+                    <p class="upload-text">Select multiple files for batch conversion</p>
+                    <p class="upload-hint">Supports mixed file formats</p>
+                </div>
+                <input type="file" id="fileInput3" multiple onchange="handleBatchFiles(this)">
+
+                <div class="file-info" id="fileInfo3">
+                    <div class="file-info-content">
+                        <span class="file-icon">&#x1F4C1;</span>
+                        <span><strong id="fileCount">0</strong> files selected</span>
+
+                    </div>
+                    <button class="clear-btn" onclick="clearBatchFiles()">&#x2715;</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <label class="form-label">Output Format</label>
+                    <select class="form-select" id="batchOutputFormat">
+                        <option value="markdown">Convert to Markdown</option>
+                        <option value="docx">Convert to Word</option>
+                        <option value="xlsx">Convert to Excel</option>
+                        <option value="pptx">Convert to PPT</option>
+                    </select>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="batchConvertBtn" onclick="batchConvert()" disabled>
+                        &#x26A1; Batch Convert
+                    </button>
+                    <button class="btn btn-success" id="batchDownloadBtn" onclick="downloadBatchResults()" style="display: none;">
+                        &#x1F4E6; Download All Files
+                    </button>
+                </div>
+
+                <div class="progress-container" id="progress3">
+                    <div class="progress-header">
+                        <span class="progress-text">Processing batch...</span>
+                        <span class="progress-percent" id="progressPercent3">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill animated" id="progressFill3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="tab-content" id="historyContent">
+            <div class="glass-card" style="animation-delay: 0.2s;">
+                <h2><span>&#x1F553;</span> Conversion History</h2>
+                <div class="history-panel show" id="historyPanel">
+                    <div class="history-empty" id="historyEmpty">
+                        No conversion history yet. Start converting files to see your history here.
+                    </div>
+                    <div id="historyList"></div>
+                    <button class="clear-history-btn" id="clearHistoryBtn" onclick="clearHistory()" style="display: none;">
+                        &#x1F5D1; Clear History
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="glass-card" style="animation-delay: 0.3s;">
+            <h2><span>&#x2139;</span> How to Use</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">&#x1F4A1;</div>
+                    <div class="info-text">
+                        <strong>Single Conversion</strong>
+                        Select a file and click convert. Supports real-time preview.
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">&#x1F4E6;</div>
+                    <div class="info-text">
+                        <strong>Batch Conversion</strong>
+                        Upload multiple files at once. Choose your target format.
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">&#x1F4C4;</div>
+                    <div class="info-text">
+                        <strong>Format Support</strong>
+                        PDF, Word, Excel, PPT, and images can all be converted to Markdown.
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">&#x1F504;</div>
+                    <div class="info-text">
+                        <strong>Bidirectional</strong>
+                        Markdown can be converted back to Word, Excel, and PPT formats.
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">&#x1F3A8;</div>
+                    <div class="info-text">
+                        <strong>OCR Support</strong>
+                        Image files are automatically processed with OCR text recognition.
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">&#x1F4BE;</div>
+                    <div class="info-text">
+                        <strong>Local History</strong>
+                        Conversion history is saved locally in your browser for easy access.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Global variables
+        let selectedFile1 = null;
+        let selectedFile2 = null;
+        let batchFiles = [];
+        let currentMode = 'to_md';
+        let selectedFormat = 'docx';
+        let convertedContent = null;
+        let convertedFileUrl = null;
+        let conversionHistory = JSON.parse(localStorage.getItem('markitdown_history') || '[]');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initDragAndDrop();
+            renderHistory();
+            // Set up textarea listener
+            document.getElementById('mdInput').addEventListener('input', function() {
+                document.getElementById('convertBtn2').disabled = this.value.trim().length === 0;
+            });
+        });
+
+        // Toast notification system
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: '&#x2705;',
+                error: '&#x274C;',
+                warning: '&#x26A0;',
+                info: '&#x1F4A1;'
+            };
+
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || icons.info}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">&#x2715;</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        // History management
+        function addToHistory(entry) {
+            conversionHistory.unshift({
+                ...entry,
+                timestamp: new Date().toISOString(),
+                id: Date.now()
+            });
+            if (conversionHistory.length > 50) {
+                conversionHistory = conversionHistory.slice(0, 50);
+            }
+            localStorage.setItem('markitdown_history', JSON.stringify(conversionHistory));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            const empty = document.getElementById('historyEmpty');
+            const clearBtn = document.getElementById('clearHistoryBtn');
+
+            if (conversionHistory.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                clearBtn.style.display = 'none';
+                return;
+            }
+
+            empty.style.display = 'none';
+            clearBtn.style.display = 'inline-flex';
+
+            list.innerHTML = conversionHistory.map(item => `
+                <div class="history-item">
+                    <div class="history-info">
+                        <div class="history-filename">${item.filename || 'Unknown'}</div>
+                        <div class="history-meta">${item.type} &bull; ${new Date(item.timestamp).toLocaleString()}</div>
+                    </div>
+                    <span class="history-status ${item.status}">${item.status === 'success' ? '&#x2714; Success' : '&#x2718; Failed'}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            conversionHistory = [];
+            localStorage.removeItem('markitdown_history');
+            renderHistory();
+            showToast('History cleared', 'info');
+        }
+
+        // Initialize drag and drop
+        function initDragAndDrop() {
+            const zones = [
+                { id: 'uploadZone1', handler: (files) => handleFile1({files}) },
+
+                { id: 'uploadZone2', handler: (files) => handleFile2({files}) },
+                { id: 'uploadZone3', handler: (files) => handleBatchFiles({files}) }
+            ];
+
+            zones.forEach(({id, handler}) => {
+                const zone = document.getElementById(id);
+                if (!zone) return;
+
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('dragover');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('dragover');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('dragover');
+                    if (e.dataTransfer.files.length > 0) {
+                        handler(e.dataTransfer.files);
+                    }
+                });
+            });
+        }
+
+        // Switch modes
+        function switchMode(mode) {
+            currentMode = mode;
+
+            // Update tabs
+            document.querySelectorAll('.mode-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            const contentMap = {
+                'to_md': 'toMdContent',
+                'from_md': 'fromMdContent',
+                'batch': 'batchContent',
+                'history': 'historyContent'
+            };
+
+            document.getElementById(contentMap[mode])?.classList.add('active');
+        }
+
+        // Handle file 1 (doc to markdown)
+        function handleFile1(input) {
+            if (input.files.length > 0) {
+                selectedFile1 = input.files[0];
+
+                document.getElementById('fileName1').textContent = selectedFile1.name;
+                document.getElementById('fileSize1').textContent = formatSize(selectedFile1.size);
+                document.getElementById('fileInfo1').classList.add('show');
+                document.getElementById('convertBtn1').disabled = false;
+
+                const validTypes = ['.pdf', '.docx', '.xlsx', '.xls', '.pptx', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif'];
+                const fileExt = selectedFile1.name.substring(selectedFile1.name.lastIndexOf('.')).toLowerCase();
+
+                if (!validTypes.includes(fileExt)) {
+                    showToast('Unsupported file format. Please upload a supported file type.', 'error');
+                    document.getElementById('convertBtn1').disabled = true;
+                }
+            }
+        }
+
+        // Handle file 2 (md file upload)
+        function handleFile2(input) {
+            if (input.files.length > 0) {
+                selectedFile2 = input.files[0];
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('mdInput').value = e.target.result;
+                    document.getElementById('convertBtn2').disabled = false;
+                };
+                reader.readAsText(selectedFile2);
+
+                document.getElementById('fileName2').textContent = selectedFile2.name;
+                document.getElementById('fileInfo2').classList.add('show');
+            }
+        }
+
+        // Handle batch files
+        function handleBatchFiles(input) {
+            batchFiles = Array.from(input.files);
+            document.getElementById('fileCount').textContent = batchFiles.length;
+            document.getElementById('fileInfo3').classList.add('show');
+            document.getElementById('batchConvertBtn').disabled = batchFiles.length === 0;
+        }
+
+        // Clear files
+        function clearFile1() {
+            selectedFile1 = null;
+
+            document.getElementById('fileInput1').value = '';
+            document.getElementById('fileInfo1').classList.remove('show');
+            document.getElementById('convertBtn1').disabled = true;
+            document.getElementById('result1').classList.remove('show');
+            convertedContent = null;
+        }
+
+        function clearFile2() {
+            selectedFile2 = null;
+            document.getElementById('fileInput2').value = '';
+            document.getElementById('fileInfo2').classList.remove('show');
+            document.getElementById('convertBtn2').disabled = true;
+        }
+
+        function clearBatchFiles() {
+            batchFiles = [];
+            document.getElementById('fileInput3').value = '';
+            document.getElementById('fileInfo3').classList.remove('show');
+            document.getElementById('batchConvertBtn').disabled = true;
+            document.getElementById('batchDownloadBtn').style.display = 'none';
+        }
+
+        // Format file size
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Select format
+        function selectFormat(format) {
+            selectedFormat = format;
+            document.querySelectorAll('.format-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.getElementById(`fmt-${format}`).classList.add('selected');
+
+            const mdContent = document.getElementById('mdInput').value.trim();
+            document.getElementById('convertBtn2').disabled = mdContent.length === 0;
+        }
+
+        // Switch input method
+        function switchInputMethod() {
+            const method = document.getElementById('inputMethod').value;
+            document.getElementById('textInput').style.display = method === 'text' ? 'block' : 'none';
+            document.getElementById('fileInputSection').style.display = method === 'file' ? 'block' : 'none';
+        }
+
+        // Progress management
+        function showProgress(id, show, percent = 0) {
+            const container = document.getElementById(`progress${id}`);
+            const percentEl = document.getElementById(`progressPercent${id}`);
+            const fillEl = document.getElementById(`progressFill${id}`);
+
+            if (show) {
+                container.classList.add('show');
+                fillEl.classList.add('animated');
+                if (percent > 0) {
+                    fillEl.classList.remove('animated');
+                    fillEl.style.width = percent + '%';
+                    percentEl.textContent = percent + '%';
+                }
+            } else {
+                fillEl.classList.remove('animated');
+                fillEl.style.width = '100%';
+                percentEl.textContent = '100%';
+                setTimeout(() => {
+                    container.classList.remove('show');
+                    fillEl.style.width = '0%';
+                    percentEl.textContent = '0%';
+                }, 500);
+            }
+        }
+
+        // Convert to Markdown
+        async function convertToMd() {
+            if (!selectedFile1) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile1);
+
+            showToast('Converting document...', 'info');
+            showProgress(1, true);
+            document.getElementById('convertBtn1').disabled = true;
+
+            try {
+                const response = await fetch('/convert/to-markdown', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    convertedContent = data.markdown;
+                    document.getElementById('resultContent1').textContent = convertedContent;
+                    document.getElementById('result1').classList.add('show');
+                    showProgress(1, false);
+
+                    showToast(`Conversion successful! ${data.char_count} characters in ${data.processing_time}s`, 'success');
+
+                    addToHistory({
+                        filename: selectedFile1.name,
+                        type: 'Document to Markdown',
+                        status: 'success'
+                    });
+                } else {
+                    showProgress(1, false);
+                    showToast('Conversion failed: ' + (data.error || 'Unknown error'), 'error');
+                    addToHistory({
+                        filename: selectedFile1.name,
+                        type: 'Document to Markdown',
+                        status: 'error'
+                    });
+                }
+            } catch (error) {
+                showProgress(1, false);
+                showToast('Request failed: ' + error.message, 'error');
+                addToHistory({
+                    filename: selectedFile1.name,
+                    type: 'Document to Markdown',
+                    status: 'error'
+                });
+            } finally {
+                document.getElementById('convertBtn1').disabled = false;
+            }
+        }
+
+        // Convert from Markdown
+        async function convertFromMd() {
+            const mdContent = document.getElementById('mdInput').value.trim();
+            if (!mdContent) {
+                showToast('Please enter Markdown content', 'warning');
+                return;
+            }
+
+            showToast('Converting document...', 'info');
+            showProgress(2, true);
+            document.getElementById('convertBtn2').disabled = true;
+
+            const formData = new FormData();
+            formData.append('markdown', mdContent);
+            formData.append('format', selectedFormat);
+
+            try {
+                const response = await fetch('/convert/from-markdown', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    convertedFileUrl = URL.createObjectURL(blob);
+
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    const filename = contentDisposition
+                        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                        : `converted.${selectedFormat}`;
+
+                    document.getElementById('result2').classList.add('show');
+                    showProgress(2, false);
+                    showToast('Conversion successful!', 'success');
+
+                    const downloadBtn = document.querySelector('#result2 .btn-success');
+                    downloadBtn.setAttribute('data-filename', filename);
+
+                    addToHistory({
+                        filename: `converted.${selectedFormat}`,
+                        type: 'Markdown to Document',
+                        status: 'success'
+                    });
+                } else {
+                    const errorData = await response.json();
+                    showProgress(2, false);
+                    showToast('Conversion failed: ' + (errorData.detail || 'Unknown error'), 'error');
+                    addToHistory({
+                        filename: `Markdown to ${selectedFormat}`,
+                        type: 'Markdown to Document',
+                        status: 'error'
+                    });
+                }
+            } catch (error) {
+                showProgress(2, false);
+                showToast('Request failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('convertBtn2').disabled = false;
+            }
+        }
+
+        // Batch convert
+        async function batchConvert() {
+            if (batchFiles.length === 0) return;
+
+            showToast(`Converting ${batchFiles.length} files...`, 'info');
+            showProgress(3, true);
+            document.getElementById('batchConvertBtn').disabled = true;
+
+            const formData = new FormData();
+            batchFiles.forEach(file => {
+
+                formData.append('files', file);
+            });
+            formData.append('output_format', document.getElementById('batchOutputFormat').value);
+
+            try {
+                const response = await fetch('/convert/batch', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showProgress(3, false);
+                    showToast(`Batch complete! Success: ${result.success_count}, Failed: ${result.fail_count}`, 'success');
+                    window._lastBatchId = result.batch_id;
+                    document.getElementById('batchDownloadBtn').style.display = 'inline-flex';
+
+                    addToHistory({
+                        filename: `${batchFiles.length} files`,
+                        type: 'Batch Conversion',
+                        status: result.fail_count === 0 ? 'success' : 'error'
+                    });
+                } else {
+                    const errorData = await response.json();
+                    showProgress(3, false);
+                    showToast('Batch conversion failed: ' + (errorData.detail || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showProgress(3, false);
+                showToast('Request failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('batchConvertBtn').disabled = false;
+            }
+        }
+
+        // Download Markdown
+        function downloadMd() {
+            if (!convertedContent) return;
+
+            const blob = new Blob([convertedContent], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = selectedFile1.name.replace(/\.[^/.]+$/, '') + '.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast('File downloaded!', 'success');
+        }
+
+        // Download converted file
+        function downloadConvertedFile() {
+            if (!convertedFileUrl) return;
+
+            const a = document.createElement('a');
+            a.href = convertedFileUrl;
+            const downloadBtn = document.querySelector('#result2 .btn-success');
+            const filename = downloadBtn.getAttribute('data-filename') || `converted.${selectedFormat}`;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            showToast('File downloaded!', 'success');
+        }
+
+        // Download batch results
+        async function downloadBatchResults() {
+            showToast('Packaging files...', 'info');
+
+            try {
+                const response = await fetch(`/convert/batch/download?batch_id=${window._lastBatchId}`);
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'converted_files.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('Files downloaded!', 'success');
+                } else {
+                    showToast('Download failed', 'error');
+                }
+            } catch (error) {
+                showToast('Download failed: ' + error.message, 'error');
+            }
+        }
+
+        // Copy Markdown
+        function copyMd() {
+            if (!convertedContent) return;
+
+            navigator.clipboard.writeText(convertedContent).then(() => {
+                showToast('Copied to clipboard!', 'success');
+
+            }).catch(err => {
+                showToast('Copy failed: ' + err.message, 'error');
+            });
+        }
+
+        // Show result tab
+        function showResultTab(tab, element) {
+            const tabs = element.parentElement.querySelectorAll('.result-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>

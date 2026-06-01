@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  markitdown:
+    build: .
+    container_name: markitdown-demo
+    ports:
+      - "8066:8066"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8066
