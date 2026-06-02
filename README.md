@@ -14,6 +14,8 @@
 
 ---
 
+![image-20260602092752867](README.assets/image-20260602092752867.png)
+
 ## ✨ Features
 
 | Feature | Description |

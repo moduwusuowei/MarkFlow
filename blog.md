@@ -1,4 +1,4 @@
-# MarkFlow: 告别格式转换烦恼，一键搞定文档互转
+# 【开源】MarkFlow: 告别格式转换烦恼，一键搞定文档互转
 
 > 你是否还在为文档格式转换而头疼？PDF转Word、Word转Markdown、图片提取文字...这些需求每天都在困扰着我们。今天给大家推荐一个开源神器——**MarkFlow**。
 
@@ -7,6 +7,8 @@
 MarkFlow 是一个基于 FastAPI 的多格式文档转换工具，支持 PDF、Word、Excel、PPT、图片与 Markdown 的双向转换。
 
 **项目地址**: https://github.com/moduwusuowei/MarkFlow
+
+![image-20260602092651717](blog.assets/image-20260602092651717.png)
 
 ## 💡 为什么选择 MarkFlow？
 
